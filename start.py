@@ -48,7 +48,7 @@ class GrapTask(Task):
             term = match.get("term")
             title = title.strip()
             term = term and term.strip()
-            if fsn and "finding" in fsn and term and term.lower() == title.lower():
+            if fsn and "finding" in fsn :#and term and term.lower() == title.lower():
                 table.set_cell_value(index, "SCTID", conceptId)
                 table.set_cell_value(index, "fsn", fsn)
                 logging.info("[%s]>[%s][%s]")
@@ -106,16 +106,18 @@ schedule = Schedule(thread_num=10, finish=finish)
 def callback(table, row, index):
     title = table.get_cell_value(index, "title")
     # url.set_param("query", title)
+    #执行匹配
     schedule.append_task(GrapTask(), (url, table, row, index, title))
+    #执行翻译
     # schedule.append_task(TranslateTask(), (translateUrl, table, row, index, title))
     # UrlTask.run((url, table, row, index, title),schedule)
     # sleep(1);
 
 def exec_task(i):
     if i<232:
-        desc_name=("source%s.xls"%(str(i+1)))
+        desc_name=("s%s.xls"%(str(i+1)))
         global excel
-        excel = ExcelParse("source%s.xls"%(str(i)), desc_name=desc_name, callback=callback, offset=50*i, limit=50)
+        excel = ExcelParse("s%s.xls"%(str(i)), desc_name=desc_name, callback=callback, offset=50*i, limit=50)
         try:
             excel.prase_body()
         except Exception ,e:
