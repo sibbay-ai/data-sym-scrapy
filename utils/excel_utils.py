@@ -1,7 +1,7 @@
 # coding=utf-8
 import xlrd
-from xlutils.copy import copy
-from utils import NetTools
+from xlutils3.copy import copy
+from utils import net_tools
 
 
 class ExcelParse(object):
@@ -17,7 +17,7 @@ class ExcelParse(object):
         self.limit = limit
         self.descTable = copy(data)
         self.desc_name = desc_name
-        self.offset = offset;
+        self.offset = offset
         self.parse_header()
 
     def parse(self):
