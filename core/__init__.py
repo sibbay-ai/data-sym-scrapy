@@ -1,7 +1,4 @@
 # coding=utf-8
-import sys;
-# reload(sys) # Python2.5 初始化后会删除 sys.setdefaultencoding 这个方法，我们需要重新载入
-# sys.setdefaultencoding('utf-8')
 import threading
 
 
@@ -11,7 +8,7 @@ class Task(object):
 
 
 class Schedule(object):
-    def __init__(self, thread_num=None,finish=None):
+    def __init__(self, thread_num=None, finish=None):
         self.buffer_schedule = []
         self.thread_num = thread_num
         self.execute_num = 0
@@ -21,14 +18,13 @@ class Schedule(object):
         self._finish and self._finish()
 
     def schedule_end(self):
-        self.execute_num = self.execute_num-1
+        self.execute_num = self.execute_num - 1
         if len(self.buffer_schedule) is not 0:
             thread = self.buffer_schedule.pop()
             # thread.start()
             self.start_task(thread)
-        if self.execute_num==0 and len(self.buffer_schedule) is 0:
+        if self.execute_num == 0 and len(self.buffer_schedule) is 0:
             self._finish()
-
 
     def start_task(self, thread):
         thread.start()

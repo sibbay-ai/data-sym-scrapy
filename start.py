@@ -4,7 +4,7 @@ import logging
 import time
 import datetime
 
-from core import Task, Schedule
+from core import Task
 from utils import net_tools
 from utils.excel_utils import ExcelParse
 
@@ -30,26 +30,26 @@ translateUrl = net_tools.Url('http://translate.google.cn/translate_a/single?clie
 class GrapTask(Task):
     def run(self, args):
         logging.info("run");
-        url, table, row, index, title = args
-        url.set_param("query", title)
+        url_str, table, row, index, title = args
+        url_str.set_param("query", title)
         result = None
         try:
-            result = url.get()
+            result = url_str.get()
         except Exception as e:
-            logging.error("%s=%s" % (e, url.url))
-        if result == None:
+            logging.error("%s=%s" % (e, url_str.url))
+        if result is None:
             return
         matches = result.get("matches")
         # logging.info(url)
         if matches and len(matches) > 0:
             match = matches[0]
-            conceptId = match.get("conceptId")
+            concept_id = match.get("conceptId")
             fsn = match.get("fsn")
             term = match.get("term")
             title = title.strip()
             term = term and term.strip()
             if fsn and "finding" in fsn and term and term.lower() == title.lower():
-                table.set_cell_value(index, "SCTID", conceptId)
+                table.set_cell_value(index, "SCTID", concept_id)
                 table.set_cell_value(index, "fsn", fsn)
                 logging.info("[%s]>[%s][%s]")
         elif title.endswith("s") or title.endswith("es"):
@@ -57,7 +57,8 @@ class GrapTask(Task):
                 title = title[0:-2]
             elif title.endswith("s"):
                 title = title[0:-1]
-            # schedule.append_task(TranslateTask(), (translateUrl, table, row, index, title))
+            # schedule.append_task(
+            TranslateTask().run(translateUrl, table, row, index, title)
             pass
             # print url.url, title, conceptId
 
@@ -67,6 +68,7 @@ excel = None
 
 # 翻译title,about任务
 class TranslateTask(Task):
+
     def parse(self, translate_url, value, row, table, header):
         result = None
         try:
@@ -74,7 +76,7 @@ class TranslateTask(Task):
             result = translate_url.get()
         except Exception as e:
             logging.error(e)
-        if result != None and len(result) > 0:
+        if result is not None and len(result) > 0:
             results = result[0]
             resultStr = "";
             for r in results:
@@ -87,12 +89,15 @@ class TranslateTask(Task):
         about = table.get_cell_value(index, "about")
         ctitle = table.get_cell_value(index, "ctitle")
         cabout = table.get_cell_value(index, "cabout")
-        if ctitle!='' and cabout!="":
+        if ctitle is not '' and cabout is not "":
             return
         self.parse(translate_url, title, index, table, "ctitle")
         self.parse(translate_url, about, index, table, "cabout")
 
-i=0
+
+i = 0
+
+
 def finish():
     excel and excel.save()
     global i
@@ -103,32 +108,34 @@ def finish():
     exec_task(i)
 
 
-#多线程处理框架
+# 多线程处理框架
 # schedule = Schedule(thread_num=10, finish=finish)
 
 
 def callback(table, row, index):
     title = table.get_cell_value(index, "title")
     # url.set_param("query", title)
-    #执行匹配
+    # 执行匹配
     # schedule.append_task(GrapTask(), (url, table, row, index, title))
-    #执行翻译
+    # 执行翻译
     # schedule.append_task(TranslateTask(), (translateUrl, table, row, index, title))
     TranslateTask().run((translateUrl, table, row, index, title))
     # UrlTask.run((url, table, row, index, title),schedule)
     # sleep(1);
 
+
 def exec_task(i):
     # print(i)
-    # if i<232:
-    #     print(i)
-    desc_name = ("full_match%s.xls"%(str(2)))
+    if i < 232:
+        print(i)
+    desc_name = ("full_match%s.xls" % (str(2)))
     global excel
-    excel = ExcelParse("full_match%s.xls"%(1), desc_name=desc_name, callback=callback, offset=0, limit=None)
+    excel = ExcelParse("full_match%s.xls" % (1), desc_name=desc_name, callback=callback, offset=0, limit=None)
     try:
         excel.prase_body()
     except Exception as e:
         logging.error("e,"+e)
     excel.save()
 
-exec_task(i);
+
+exec_task(i)
