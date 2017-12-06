@@ -7,7 +7,16 @@ class Task(object):
         pass
 
 
+"""
+    多线程处理逻辑
+"""
+
+
 class Schedule(object):
+    """
+    thread_num:线程数
+    finish：执行完成回掉
+    """
     def __init__(self, thread_num=None, finish=None):
         self.buffer_schedule = []
         self.thread_num = thread_num
