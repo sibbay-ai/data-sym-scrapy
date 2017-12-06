@@ -18,17 +18,17 @@ class Schedule(object):
         self._finish and self._finish()
 
     def schedule_end(self):
-        self.execute_num = self.execute_num - 1
-        if len(self.buffer_schedule) is not 0:
+        self.execute_num -= 1
+        if self.buffer_schedule:
             thread = self.buffer_schedule.pop()
             # thread.start()
             self.start_task(thread)
-        if self.execute_num == 0 and len(self.buffer_schedule) is 0:
+        if self.execute_num == 0 and not self.buffer_schedule:
             self._finish()
 
     def start_task(self, thread):
         thread.start()
-        self.execute_num = self.execute_num + 1
+        self.execute_num += 1
 
     def clear(self):
         self.execute_num = 0
@@ -49,4 +49,4 @@ class Schedule(object):
     def _is_full(self):
         if self.thread_num is None:
             return False
-        return True if self.execute_num >= self.thread_num else False
+        return self.execute_num >= self.thread_num

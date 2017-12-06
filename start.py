@@ -1,4 +1,3 @@
-# coding=utf-8
 import logging
 
 import time
@@ -21,12 +20,17 @@ def init_logger():
 
 
 init_logger()
-url = net_tools.Url(
-    "http://browser.ihtsdotools.org/api/v1/snomed/en-edition/v20170731/descriptions?query=Headaches&limit=50&searchMode=partialMatching&lang=english&statusFilter=activeOnly&skipTo=0&returnLimit=100&normalize=true");
-translateUrl = net_tools.Url('http://translate.google.cn/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q=google')
+IHT_URL = net_tools.Url(
+    'http://browser.ihtsdotools.org/api/v1/snomed/en-edition/v20170731/descriptions?query=Headaches&limit=50&searchMode=partialMatching&lang=english&statusFilter=activeOnly&skipTo=0&returnLimit=100&normalize=true');
+TRANSLATE_URL = net_tools.Url('http://translate.google.cn/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q=google')
+
+"""
+    根据query去查询信息
+    TranslateTask().run(TRANSLATE_URL, table, row, index, title)
+    可以修改为：Schedule.appendTask(TranslateTask(),(table, row, index, title))
+"""
 
 
-# excel STID获取任务
 class GrapTask(Task):
     def run(self, args):
         logging.info("run");
@@ -40,8 +44,7 @@ class GrapTask(Task):
         if result is None:
             return
         matches = result.get("matches")
-        # logging.info(url)
-        if matches and len(matches) > 0:
+        if matches:
             match = matches[0]
             concept_id = match.get("conceptId")
             fsn = match.get("fsn")
@@ -53,34 +56,38 @@ class GrapTask(Task):
                 table.set_cell_value(index, "fsn", fsn)
                 logging.info("[%s]>[%s][%s]")
         elif title.endswith("s") or title.endswith("es"):
+            """
+                主要是这两个判断需要同样的处理步骤，只是取得字段内容不一样
+            """
             if title.endswith("es"):
                 title = title[0:-2]
             elif title.endswith("s"):
                 title = title[0:-1]
-            # schedule.append_task(
-            TranslateTask().run(translateUrl, table, row, index, title)
-            pass
-            # print url.url, title, conceptId
+            TranslateTask().run(TRANSLATE_URL, table, row, index, title)
 
 
 excel = None
 
+"""
+    翻译excel中的ctitle和cabout
+"""
 
-# 翻译title,about任务
+
 class TranslateTask(Task):
 
-    def parse(self, translate_url, value, row, table, header):
+    @staticmethod
+    def parse(translate_url, value, row, table, header):
         result = None
         try:
             translate_url.set_param("q", value)
             result = translate_url.get()
         except Exception as e:
             logging.error(e)
-        if result is not None and len(result) > 0:
+        if result:
             results = result[0]
             resultStr = "";
             for r in results:
-                if len(r) > 0 and r[0] is not None:
+                if r:
                     resultStr = resultStr + r[0]
             table.set_cell_value(row, header, resultStr)
 
@@ -95,47 +102,59 @@ class TranslateTask(Task):
         self.parse(translate_url, about, index, table, "cabout")
 
 
-i = 0
-
-
 def finish():
     excel and excel.save()
-    global i
-    i = i+1
-    logging.info("sleep start"+str(datetime.datetime.now()))
+    global EXECUTE_NUM
+    EXECUTE_NUM = EXECUTE_NUM + 1
+    logging.info("sleep start" + str(datetime.datetime.now()))
     time.sleep(10)
-    logging.info("sleep end"+str(datetime.datetime.now()))
-    exec_task(i)
+    logging.info("sleep end" + str(datetime.datetime.now()))
+    exec_task(EXECUTE_NUM)
 
 
-# 多线程处理框架
-# schedule = Schedule(thread_num=10, finish=finish)
+"""
+    excel：执行回掉函数 
+    通过线程执行方法
+    schedule = Schedule(thread_num=10, finish=finish) 创建线程调度器
+    schedule.append_task(GrapTask(), (url, table, row, index, title)) ihtsdotools 查询fsn,stid
+    schedule.append_task(TranslateTask(), (translateUrl, table, row, index, title)) 翻译
+    非线程执行方法：
+    UrlTask.run((url, table, row, index, title),schedule) 查询fsn,stid
+    TranslateTask().run((TRANSLATE_URL, table, row, index, title)) 翻译
+"""
 
 
 def callback(table, row, index):
     title = table.get_cell_value(index, "title")
-    # url.set_param("query", title)
-    # 执行匹配
-    # schedule.append_task(GrapTask(), (url, table, row, index, title))
-    # 执行翻译
-    # schedule.append_task(TranslateTask(), (translateUrl, table, row, index, title))
-    TranslateTask().run((translateUrl, table, row, index, title))
-    # UrlTask.run((url, table, row, index, title),schedule)
-    # sleep(1);
+    TranslateTask().run((TRANSLATE_URL, table, row, index, title))
 
 
-def exec_task(i):
-    # print(i)
-    if i < 232:
-        print(i)
+"""
+    执行任务
+    i：用来解决ihtsdotools访问过于频繁导致的ip被封的情况
+    具体逻辑：将excel中逻辑分成多个片段，每个片段执行后睡眠30s
+"""
+
+EXECUTE_NUM = 0
+
+
+def exec_task(execute_num):
+    """
+        execute_num只针对ihtsdotools封ip的时候才会使用，其余不需要使用
+    """
+    if execute_num < 232:
+        print(execute_num)
+    """
+        2 1两个数字只是为了生成的目的excel文件和源文件不一致
+    """
     desc_name = ("full_match%s.xls" % (str(2)))
     global excel
-    excel = ExcelParse("full_match%s.xls" % (1), desc_name=desc_name, callback=callback, offset=0, limit=None)
+    excel = ExcelParse("full_match%s.xls" % 1, desc_name=desc_name, callback=callback, offset=0, limit=None)
     try:
         excel.prase_body()
     except Exception as e:
-        logging.error("e,"+e)
+        logging.error("e," + e)
     excel.save()
 
 
-exec_task(i)
+exec_task(EXECUTE_NUM)

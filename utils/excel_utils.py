@@ -3,6 +3,15 @@ from xlutils3.copy import copy
 
 
 class ExcelParse(object):
+    """
+        path:excel路径
+        sheet:excel中的sheet下表
+        head_index:excel标题头所在的行数
+        callback：遍历每一行的回掉
+        offset：内容体遍历的起始位置
+        limit：遍历的总记录数
+        descName：最终生成的excel
+    """
     def __init__(self, path, sheet=0, head_index=0, callback=None, offset=0, limit=None, desc_name="aaa.xls"):
         data = xlrd.open_workbook(path)
         self.table = data.sheet_by_index(sheet)
@@ -35,16 +44,25 @@ class ExcelParse(object):
         for i in range(self.ncols):
             self.headers.append(head[i])
 
+    """
+        获取单元格的值
+    """
     def get_cell_value(self, row_index, header):
         row = self.table.row_values(row_index)
         index = self.headers.index(header)
         return row[index]
 
+    """
+        设置excel的单元格的值
+    """
     def set_cell_value(self, row_index, header, value, sheet=0):
         index = self.headers.index(header)
         table = self.descTable.get_sheet(sheet)
         table.write(row_index, index, value)
 
+    """
+    保存
+    """
     def save(self):
         self.descTable.save(self.desc_name)
 

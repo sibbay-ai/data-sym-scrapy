@@ -45,28 +45,4 @@ class Url(object):
 
 
 if __name__ == "__main__":
-    # m = re.match(r'hello', 'hello world!')
-    # url = Url("https://play.google.com/log?format=json&authuser=0")
-    # url.get()
     print(quote("http://             ",safe="/:?&="))
-    # url = Url(
-    #     "http://translate.google.cn/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q=Numbness%20in%20left%20arm%20is%20experienced%20by%20members%20of%20the%20PatientsLikeMe%20community.")
-    # print(url.get())
-    # print m.group()
-    # print set_page_param("asdas&Page=1&asd=a", "22");
-    #
-    # import re
-    #
-    # 将正则表达式编译成Pattern对象
-    # pattern = re.compile(r'Page')
-    #
-    # 使用Pattern匹配文本，获得匹配结果，无法匹配时将返回None
-    # match = pattern.match('asdas&Page=1&asd=a')
-
-    # if match:
-    # 使用Match获得分组信息
-    # print match.group()
-    # try:
-    #     print get_json("http://www.google.com/", 3)
-    # except urllib2.URLError:
-    #     pass
